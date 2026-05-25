@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мой список задач</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
+        form { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 8px; }
+        button { padding: 8px; cursor: pointer; }
+        ul { list-style: none; padding: 0; }
+        li { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; }
+        li button { background: #ff4d4d; color: white; border: none; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <h2>Список задач</h2>
+    
+    <form id="todo-form">
+        <input type="text" id="todo-input" placeholder="Что нужно сделать?" required>
+        <button type="submit">Добавить</button>
+    </form>
+
+    <ul id="todo-list"></ul>
+
+    <script>
+        const form = document.getElementById('todo-form');
+        const input = document.getElementById('todo-input');
+        const list = document.getElementById('todo-list');
+
+        // Загрузка задач при старте
+        async function loadTodos() {
+            const res = await fetch('/api/todos');
+            const todos = await res.json();
+            list.innerHTML = '';
+            todos.forEach(todo => appendTodoHTML(todo));
+        }
+
+        // Отрисовка одной задачи
+        function appendTodoHTML(todo) {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span>${todo.task}</span>
+                <button onclick="deleteTodo(${todo.id}, this)">Удалить</button>
+            `;
+            list.appendChild(li);
+        }
+
+        // Обработка отправки формы
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const task = input.value;
+            
+            const res = await fetch('/api/todos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task })
+            });
+            const newTodo = await res.json();
+            appendTodoHTML(newTodo);
+            input.value = '';
+        });
+
+        // Удаление задачи
+        async function deleteTodo(id, button) {
+            await fetch(`/api/todos/${id}`, { method: 'DELETE' });
+            button.parentElement.remove();
+        }
+
+        loadTodos();
+    </script>
+</body>
+</html>
+

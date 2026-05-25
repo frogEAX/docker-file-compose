@@ -1,0 +1,26 @@
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /app
+
+RUN adduser -D -u 1001 -s /sbin/nologin app
+
+COPY go.sum go.mod ./
+
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+
+###part 2###
+FROM scratch
+
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /app/main /app/main
+COPY --from=builder /etc/group /etc/group
+
+USER app
+
+EXPOSE 8080
+
+ENTRYPOINT ["/app/main"]

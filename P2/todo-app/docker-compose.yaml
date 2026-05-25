@@ -1,0 +1,60 @@
+
+services:
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todos
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - webnet
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/todos?sslmode=disable
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    networks:
+      - webnet
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+    volumes:
+      - nginx_logs:/var/log/nginx/
+    ports:
+      - "80:80"
+    networks:
+      - webnet
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+networks:
+  webnet:
+    driver: bridge
+
+volumes:
+  pgdata:
+  nginx_logs:
