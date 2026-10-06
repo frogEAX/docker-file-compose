@@ -39,7 +39,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const API = '/api'
 const stats = ref({})
 
 async function load() {

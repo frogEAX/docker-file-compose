@@ -19,7 +19,11 @@ CH_HOST = os.getenv("CLICKHOUSE_HOST", "localhost")
 CH_PORT = int(os.getenv("CLICKHOUSE_PORT", "8123"))
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
-ch = clickhouse_connect.get_client(host=CH_HOST, port=CH_PORT)
+ch = clickhouse_connect.get_client(
+    host=CH_HOST, port=CH_PORT,
+    username=os.getenv("CLICKHOUSE_USER"),
+    password=os.getenv("CLICKHOUSE_PASSWORD"),
+)
 r = redis.from_url(REDIS_URL, decode_responses=True)
 
 ch.command("""
@@ -35,7 +39,7 @@ ch.command("""
 @app.get("/track")
 async def track(request: Request):
     path = str(request.query_params.get("path", "/"))
-    ip = request.client.host
+    ip = request.headers.get("x-real-ip") or request.client.host
     ch.insert("visits", [[path, ip, datetime.utcnow()]], column_names=["path", "ip", "ts"])
     r.incr("total_visits")
     return {"ok": True}
